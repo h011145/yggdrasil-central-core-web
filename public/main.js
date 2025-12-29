@@ -13,7 +13,7 @@ term.loadAddon(fitAddon);
 term.open(document.getElementById('terminal'));
 
 // WebSocketサーバーに接続
-const socket = new WebSocket('ws://localhost:8765');
+const socket = new WebSocket(`wss://${window.location.host}`);
 
 function sendTerminalSize() {
     if (socket.readyState === WebSocket.OPEN) {

@@ -1,0 +1,12 @@
+# render.yaml
+services:
+  - type: web
+    name: yggdrasil-central-core-web
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python server.py"
+    plan: free # RenderのFreeプランを使用
+    healthCheckPath: "/" # ヘルスチェックパス
+    # envVars:
+    #   - key: PORT
+    #     value: "8000" # 環境変数PORTの指定 (Renderが自動で割り当てるので通常は不要)

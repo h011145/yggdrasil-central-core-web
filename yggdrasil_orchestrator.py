@@ -7,55 +7,18 @@ import os
 import json
 import traceback
 import sys
-sys.path.append('/home/hirosi/my_gemini_project/games')
+# ### MODIFIED: 絶対パスを相対パスに修正 ###
+# sys.path.append('/home/hirosi/my_gemini_project/games') # この行は削除またはコメントアウト
 import random
 
 # --- 定数とパス設定 ---
-PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__)) # yggdrasil_web ディレクトリを指す
 GAMES_DIR = os.path.join(PROJECT_ROOT, 'games')
 GAME_DATA_DIR = os.path.join(PROJECT_ROOT, 'game_data')
 DIALOGUE_PATH = os.path.join(GAME_DATA_DIR, 'kanata_dialogue.json')
 
-# ### ADDED: ランク称号の定義をオーケストレーターに移動 ###
-RANK_TITLES = {
-    1: "下級市民",
-    2: "一般市民",
-    3: "上級市民",
-    4: "元老院議員",
-    5: "神"
-}
-
-# ### ADDED: 義体/ロボットIDからゲームモードへのマッピング ###
-# cyborg_garage.py の定義と同期している必要があります
-PROSTHETIC_ID_TO_MODE = {
-    "TYPE-A_BASIC": "戦闘アーカイブ (COMBAT)", # 基本義体で戦闘アーカイブは常に利用可能だが、形式的にここに含める
-    "TYPE-B_BRAWLER": "戦闘アーカイブ (COMBAT)", # 戦闘特化義体も戦闘アーカイブ
-    "TYPE-D_SOCIAL": "社交アーカイブ (SOCIAL)",
-    "TYPE-C_SNIPER": "狙撃アーカイブ (SNIPE)",
-    "TYPE-E_TRADE": "貿易アーカイブ (TRADE)",
-}
-
-ROBOT_ID_TO_MODE = {
-    "SENTINEL": "ネクスト戦記 (NEXT WAR)",
-    "PROMINENCE": "魔塔戦記 (MATO SENKI)",
-}
-
-# ### ADDED: 各メニュー項目の説明文 ###
-MODE_DESCRIPTIONS = {
-    "義体改造 (GARAGE)": "義体やロボットを開発・購入し、自身の能力を強化します。",
-    "戦闘アーカイブ (COMBAT)": "仮想戦闘空間で敵と戦い、実践的なスキルとGPを獲得します。",
-    "社交アーカイブ (SOCIAL)": "交渉や情報収集を通じて、社会的な影響力とGPを増やします。",
-    "狙撃アーカイブ (SNIPE)": "精密な射撃技術を磨き、高難易度の標的を排除してGPを得ます。",
-    "貿易アーカイブ (TRADE)": "都市間での物資売買を通じて、経済的なGPを蓄積します。",
-    "選挙 (ELECTION)": "神格レベルを上げるため、選挙に立候補します。実績と運が重要です。",
-    "ネクスト戦記 (NEXT WAR)": "ネクストとの大規模戦闘をシミュレートし、戦略的な指揮能力が試されます。",
-    "魔塔戦記 (MATO SENKI)": "プロミネンスと共に古の魔塔の謎を解き明かす、テキストアドベンチャーです。",
-    "終了": "YGGDRASIL CENTRAL COREのシステムを終了します。"
-}
-
-
 if GAMES_DIR not in sys.path:
-    sys.path.insert(0, GAMES_DIR)
+    sys.path.insert(0, GAMES_DIR) # GAMES_DIR をパスに追加
 
 os.makedirs(GAME_DATA_DIR, exist_ok=True)
 
@@ -63,7 +26,7 @@ os.makedirs(GAME_DATA_DIR, exist_ok=True)
 try:
     import archive_combat
     import archive_social
-    sys.path.append('/home/hirosi/my_gemini_project/games'); import cyborg_garage
+    import cyborg_garage
     import archive_trade
     import archive_snipe
     import archive_next_war
@@ -139,20 +102,17 @@ class WorldEngine:
             style = curses.A_REVERSE if i == selection else curses.A_NORMAL
             self.stdscr.addstr(6 + i, 4, f"> {item}"[:w-6], style)
         
-        # ### ADDED: 選択中のメニュー項目の説明文表示 ###
         selected_item_text = items[selection]
         description = MODE_DESCRIPTIONS.get(selected_item_text, "この項目に関する説明はありません。" )
         
-        # 説明文の表示エリア (システムログの少し上)
         desc_start_y = h - 11
         self.stdscr.addstr(desc_start_y, 2, "--- 説明 ---")
         
-        # 説明文を折り返して表示
-        wrapped_desc_lines = self.wrap_text(description, w - 4) # 左右2文字のマージン
+        wrapped_desc_lines = self.wrap_text(description, w - 4)
         for i, line in enumerate(wrapped_desc_lines):
             self.stdscr.addstr(desc_start_y + 1 + i, 4, line)
 
-        ly = h - 6 # システムログの位置を調整
+        ly = h - 6
         self.stdscr.addstr(ly, 2, "--- SYSTEM LOG ---")
         for i, log in enumerate(self.logs[-(h-ly-2):]):
             self.stdscr.addstr(ly + 1 + i, 4, log[:w-6])
@@ -166,7 +126,6 @@ class WorldEngine:
         words = text.split(' ')
         current_line = []
         for word in words:
-            # 現在の行 + 新しい単語 + スペースが幅を超えるか
             if len(' '.join(current_line + [word])) <= width:
                 current_line.append(word)
             else:
