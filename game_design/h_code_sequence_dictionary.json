@@ -1,0 +1,195 @@
+{
+  "sequences": [
+    {
+      "id": "SEQ_580",
+      "h_code": "580",
+      "name": "自爆覚悟の全力攻撃",
+      "description": "窮地に陥った際の最後の賭け。一時的に絶大な力を得るが、その後、深刻な反動がある。",
+      "type": "Combat",
+      "effects": [
+        {
+          "trigger": "HP_BELOW_40_PERCENT",
+          "action": { "type": "STAT_MOD", "stat": "ATTACK", "modifier": 3.0, "duration": 1 }
+        }
+      ]
+    },
+    {
+      "id": "SEQ_29",
+      "h_code": "29",
+      "name": "最善の選択 (カウンター)",
+      "description": "状況を完璧に見極めた最良の一手。困難な状況を打開する。",
+      "type": "Combat",
+      "effects": [
+        {
+          "trigger": "ENEMY_ATTACKING",
+          "action": { "type": "COUNTER_ATTACK", "power": 15 }
+        }
+      ]
+    },
+    {
+      "id": "SEQ_20",
+      "h_code": "20",
+      "name": "最悪の選択 (ファンブル)",
+      "description": "取り返しのつかない失敗。状況を悪化させ、ペナルティを受ける。",
+      "type": "Combat",
+      "effects": [
+        {
+          "trigger": "TIMING_WINDOW_FAILURE",
+          "action": { "type": "FUMBLE" },
+          "after_effect": { "type": "STATUS_EFFECT", "status": "DEFENSE_DOWN", "target": "SELF", "duration": 2 }
+        }
+      ]
+    },
+    {
+      "id": "SEQ_DEFAULT_ATTACK",
+      "h_code": "1",
+      "name": "通常攻撃 / 初動",
+      "description": "基本的な攻撃アクション。全てのコンボの起点となる。",
+      "type": "Combat",
+      "effects": [
+        {
+          "trigger": "ALWAYS",
+          "action": { "type": "NORMAL_ATTACK", "power": 10 }
+        }
+      ]
+    },
+    {
+      "id": "SEQ_108",
+      "h_code": "108",
+      "name": "始まりの終焉",
+      "description": "1(始動)から0(不在)を経て8(達成)へ至る。弱体化した敵への決定打。",
+      "type": "Combat",
+      "effects": [
+        {
+          "trigger": "ENEMY_HP_LOW",
+          "action": { "type": "FINISH_ATTACK", "power": 50 }
+        },
+        {
+          "trigger": "ALWAYS",
+          "action": { "type": "NORMAL_ATTACK", "power": 10 }
+        }
+      ]
+    },
+    {
+      "id": "SEQ_01",
+      "h_code": "01",
+      "name": "セカンドウインド",
+      "description": "行動不能状態から即座に復帰し、戦闘を再開する。",
+      "type": "Combat",
+      "effects": [
+        { "trigger": "ON_STUN", "action": { "type": "RECOVER_STATUS", "status": "ALL" } }
+      ]
+    },
+    {
+      "id": "SEQ_029",
+      "h_code": "029",
+      "name": "アイテム蘇生",
+      "description": "味方の戦闘不能状態から、アイテムを選択して蘇生させる。",
+      "type": "Combat",
+      "effects": [
+        { "trigger": "ALLY_DOWN_AND_ITEM_EXISTS", "action": { "type": "REVIVE_ALLY_WITH_ITEM", "hp_recovery": 1.0 } }
+      ]
+    },
+    {
+      "id": "SEQ_05",
+      "h_code": "05",
+      "name": "リベンジモード",
+      "description": "味方の戦闘不能をトリガーに、自身の攻撃力が大幅に上昇する。",
+      "type": "Combat",
+      "effects": [
+        { "trigger": "ALLY_JUST_DEFEATED", "action": { "type": "STAT_MOD", "stat": "ATTACK", "modifier": 2.5, "duration": 20 } }
+      ]
+    },
+    {
+      "id": "SEQ_91",
+      "h_code": "91",
+      "name": "連続行動 (チェイン)",
+      "description": "行動完了後、即座に次の初動に移ることを可能にする。",
+      "type": "Combat",
+      "effects": [
+        { "trigger": "AFTER_FINISHER", "action": { "type": "ENABLE_CHAIN_COMBO" } }
+      ]
+    },
+    {
+      "id": "SEQ_94",
+      "h_code": "94",
+      "name": "残心",
+      "description": "行動完了後、即座に防御姿勢に移行し、隙をなくす。",
+      "type": "Combat",
+      "effects": [
+        { "trigger": "AFTER_ACTION", "action": { "type": "AUTO_GUARD" } }
+      ]
+    },
+    {
+      "id": "SEQ_21",
+      "h_code": "21",
+      "name": "和解",
+      "description": "対立から、新たな始まりへ。交渉を成功させる。",
+      "type": "Social",
+      "effects": [
+        { "trigger": "IN_NEGOTIATION", "action": { "type": "RESOLVE_CONFLICT", "result": "POSITIVE" } }
+      ]
+    },
+    {
+      "id": "SEQ_46",
+      "h_code": "46",
+      "name": "常連へのサービス",
+      "description": "安定した日常から、調和的なサービスへ。常連客の満足度を高める。",
+      "type": "Social",
+      "effects": [
+        { "trigger": "SERVING_REGULAR_CUSTOMER", "action": { "type": "ENHANCED_SERVICE", "satisfaction_bonus": 1.5 } }
+      ]
+    },
+    {
+      "id": "SEQ_71",
+      "h_code": "71",
+      "name": "探索開始",
+      "description": "神秘への探求、未知の領域への第一歩。",
+      "type": "Exploration",
+      "effects": [
+        { "trigger": "AT_AREA_ENTRANCE", "action": { "type": "START_EXPLORATION" } }
+      ]
+    },
+    {
+      "id": "SEQ_70",
+      "h_code": "70",
+      "name": "探索終了",
+      "description": "探求を終え、日常へ帰る。",
+      "type": "Exploration",
+      "effects": [
+        { "trigger": "PLAYER_COMMAND_EXIT", "action": { "type": "END_EXPLORATION" } }
+      ]
+    },
+    {
+      "id": "SEQ_SOCIAL_GREETING_1",
+      "h_code": "1",
+      "name": "挨拶",
+      "description": "顧客への最初の挨拶。新しい対話の始まり。",
+      "type": "Social",
+      "effects": [
+        {"trigger": "ALWAYS", "action": {"type": "social_satisfaction", "value": 5}}
+      ]
+    },
+    {
+      "id": "SEQ_SOCIAL_AGREE_6",
+      "h_code": "6",
+      "name": "相槌",
+      "description": "調和と共感を示す。顧客の満足度を高める。",
+      "type": "Social",
+      "effects": [
+        {"trigger": "ALWAYS", "action": {"type": "social_satisfaction", "value": 10}}
+      ]
+    },
+    {
+      "id": "SEQ_SOCIAL_QUESTION_2",
+      "h_code": "2",
+      "name": "質問",
+      "description": "対話の分岐点。顧客の反応で満足度が変化する。",
+      "type": "Social",
+      "effects": [
+        {"trigger": "CUSTOMER_MOOD_POSITIVE", "action": {"type": "social_satisfaction", "value": 15}},
+        {"trigger": "CUSTOMER_MOOD_NEGATIVE", "action": {"type": "social_satisfaction", "value": -10}}
+      ]
+    }
+  ]
+}

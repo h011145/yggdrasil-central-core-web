@@ -1,0 +1,15 @@
+{
+  "divine_level": 1,
+  "garage_points": 125,
+  "base_hp": 100,
+  "attack_buff": 0,
+  "scenario_unlocked_next_war": false,
+  "owned_prosthetics": [
+    "TYPE-A_BASIC"
+  ],
+  "owned_robots": [],
+  "equipped_prosthetic_id": "TYPE-A_BASIC",
+  "equipped_robot_id": null,
+  "name_current_prosthetic": "汎用基本義体 Type-A",
+  "name_current_robot": "なし"
+}

@@ -1,0 +1,64 @@
+{
+  "h_codes": [
+    {
+      "code": "801",
+      "name": "対ネクスト・パルス",
+      "type": "NextWarCombat",
+      "description": "ネクストの装甲に有効なエネルギーパルスを発射する。",
+      "effects": [
+        {
+          "action": {
+            "type": "damage",
+            "value": 30,
+            "attributes": ["energy", "next_bonus"]
+          }
+        }
+      ]
+    },
+    {
+      "code": "411",
+      "name": "緊急回避",
+      "type": "NextWarCombat",
+      "description": "次の敵の攻撃を一度だけ完全に回避する。",
+      "effects": [
+        {
+          "action": {
+            "type": "apply_status",
+            "status": "evade",
+            "duration": 1
+          }
+        }
+      ]
+    },
+    {
+      "code": "999",
+      "name": "リミッター解除",
+      "type": "NextWarCombat",
+      "description": "義体のリミッターを解除し、一時的に攻撃力を大幅に上昇させる。",
+      "effects": [
+        {
+          "action": {
+            "type": "apply_buff",
+            "buff": "attack_up",
+            "value": 20,
+            "duration": 3
+          }
+        }
+      ]
+    },
+    {
+      "code": "101",
+      "name": "標準打撃",
+      "type": "NextWarCombat",
+      "description": "基本的な打撃攻撃。",
+      "effects": [
+        {
+          "action": {
+            "type": "damage",
+            "value": 15
+          }
+        }
+      ]
+    }
+  ]
+}

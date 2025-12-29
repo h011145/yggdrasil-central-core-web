@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.env
+venv/
+
+# IDEs
+.idea/
+.vscode/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# OS generated files
+.DS_Store
+.Trashes
+Thumbs.db
+
+# Game specific
+*.log
+*.sqlite
+game_data/*.json # セーブデータを除外
+*.db

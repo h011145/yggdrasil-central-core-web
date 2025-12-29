@@ -1,0 +1,22 @@
+{
+  "divine_level": 5,
+  "garage_points": 5565,
+  "base_hp": 490,
+  "attack_buff": 65,
+  "scenario_unlocked_next_war": false,
+  "owned_prosthetics": [
+    "TYPE-A_BASIC",
+    "TYPE-B_BRAWLER",
+    "TYPE-C_SNIPER",
+    "TYPE-D_SOCIAL",
+    "TYPE-E_TRADE"
+  ],
+  "owned_robots": [
+    "SENTINEL",
+    "PROMINENCE"
+  ],
+  "equipped_prosthetic_id": "TYPE-E_TRADE",
+  "equipped_robot_id": "PROMINENCE",
+  "name_current_prosthetic": "貿易支援義体 Type-E",
+  "name_current_robot": "超戦略プロミネンス"
+}

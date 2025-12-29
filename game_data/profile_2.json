@@ -1,0 +1,19 @@
+{
+  "divine_level": 2,
+  "garage_points": 1060,
+  "base_hp": 90,
+  "attack_buff": 5,
+  "scenario_unlocked_next_war": true,
+  "owned_prosthetics": [
+    "TYPE-A_BASIC",
+    "TYPE-B_BRAWLER",
+    "TYPE-C_SNIPER",
+    "TYPE-D_SOCIAL",
+    "TYPE-E_TRADE"
+  ],
+  "owned_robots": [],
+  "equipped_prosthetic_id": "TYPE-E_TRADE",
+  "equipped_robot_id": null,
+  "name_current_prosthetic": "貿易支援義体 Type-E",
+  "name_current_robot": "なし"
+}
