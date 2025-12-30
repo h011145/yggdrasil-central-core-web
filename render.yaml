@@ -4,7 +4,7 @@ services:
     name: yggdrasil-central-core-web
     env: python
     buildCommand: "pip install -r requirements.txt"
-    startCommand: "python server.py"
+    startCommand: "python server_v2.py"
     plan: free # RenderのFreeプランを使用
     healthCheckPath: "/" # ヘルスチェックパス
     # envVars:
