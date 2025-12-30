@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import asyncio
-import websockets
 import os
 import pty
 import subprocess
@@ -8,24 +7,23 @@ import fcntl
 import termios
 import json
 import struct # for TIOCSWINSZ
+from aiohttp import web
 
-async def handler(websocket, path):
+async def websocket_handler(request):
     """
     WebSocketクライアントからの接続を処理し、ゲームプロセスを中継するハンドラ
     """
-    print(f"クライアントが接続しました: {websocket.remote_address}")
-    
+    ws = web.WebSocketResponse()
+    await ws.prepare(request)
+    print(f"クライアントが接続しました: {request.remote}")
+
     master_fd, slave_fd = pty.openpty()
 
-    # ゲームプロセスのコマンド (Render環境ではpython3がパスに含まれる)
-    # yggdrasil_orchestrator.py へのパスも相対パスに変更
     game_command = [
-        "python3", # Render環境のpython3を使用
-        "./yggdrasil_orchestrator.py" # 相対パス
+        "python3",
+        "./yggdrasil_orchestrator.py"
     ]
     
-    # Render環境で仮想環境は不要なので、直接 subprocess.Popen を使用
-    # preexec_fn=os.setsid は重要 (プロセスグループを作成し、ターミナルセッションから独立させる)
     process = await asyncio.create_subprocess_exec(
         *game_command,
         stdin=slave_fd,
@@ -34,6 +32,12 @@ async def handler(websocket, path):
         preexec_fn=os.setsid
     )
     
+    # Add logging for process lifecycle
+    async def monitor_process():
+        await process.wait()
+        print(f"ゲームプロセス (PID: {process.pid}) が終了しました。Exit Code: {process.returncode}")
+    asyncio.create_task(monitor_process())
+
     fcntl.fcntl(master_fd, fcntl.F_SETFL, os.O_NONBLOCK)
 
     print(f"ゲームプロセスを開始しました (PID: {process.pid})")
@@ -43,14 +47,15 @@ async def handler(websocket, path):
             loop = asyncio.get_event_loop()
             while process.returncode is None:
                 try:
-                    # 疑似ターミナルからデータをノンブロッキングで読み取る
                     output = await loop.run_in_executor(None, lambda: os.read(master_fd, 1024))
                     if output:
-                        await websocket.send(output.decode('utf-8', errors='replace'))
+                        await ws.send_str(output.decode('utf-8', errors='replace'))
                 except BlockingIOError:
-                    await asyncio.sleep(0.01) # データがなければ少し待つ
-        except websockets.exceptions.ConnectionClosed:
-            print("PTY->WS: クライアント接続が切れました。")
+                    await asyncio.sleep(0.01)
+        except ConnectionResetError:
+            print("PTY->WS: クライアントが切断されました (ConnectionResetError)。")
+        except Exception as e:
+            print(f"PTY->WS: 予期せぬエラー: {e}")
         finally:
             if process.returncode is None:
                 print("PTY->WS: プロセスを終了します。")
@@ -58,23 +63,21 @@ async def handler(websocket, path):
 
     async def forward_ws_to_pty():
         try:
-            async for message in websocket:
-                msg_data = json.loads(message)
-                
-                if msg_data['type'] == 'resize':
-                    # TIOCSWINSZを使ってptyのサイズを設定
-                    # struct.packでcolsとrowsをバイト列に変換
-                    winsize = struct.pack("HHHH", msg_data['rows'], msg_data['cols'], 0, 0)
-                    fcntl.ioctl(master_fd, termios.TIOCSWINSZ, winsize)
-                    print(f"ターミナルサイズを変更: {msg_data['cols']}x{msg_data['rows']}")
-                
-                elif msg_data['type'] == 'input':
-                    os.write(master_fd, msg_data['data'].encode('utf-8'))
-
-        except websockets.exceptions.ConnectionClosed:
-            print("WS->PTY: クライアント接続が切れました。")
-        except json.JSONDecodeError:
-            print("無効なJSONメッセージを受信しました。")
+            async for msg in ws:
+                if msg.type == web.WSMsgType.TEXT:
+                    msg_data = json.loads(msg.data)
+                    
+                    if msg_data['type'] == 'resize':
+                        winsize = struct.pack("HHHH", msg_data['rows'], msg_data['cols'], 0, 0)
+                        fcntl.ioctl(master_fd, termios.TIOCSWINSZ, winsize)
+                        print(f"ターミナルサイズを変更: {msg_data['cols']}x{msg_data['rows']}")
+                    
+                    elif msg_data['type'] == 'input':
+                        os.write(master_fd, msg_data['data'].encode('utf-8'))
+                elif msg.type == web.WSMsgType.ERROR:
+                    print(f"WS->PTY: WebSocket接続でエラー: {ws.exception()}")
+        except Exception as e:
+            print(f"WS->PTY: 予期せぬエラー: {e}")
         finally:
             if process.returncode is None:
                 print("WS->PTY: プロセスを終了します。")
@@ -91,22 +94,43 @@ async def handler(websocket, path):
             await process.wait()
         os.close(master_fd)
         os.close(slave_fd)
-        print(f"クライアントとの接続を終了しました: {websocket.remote_address}")
+        print(f"クライアントとの接続を終了しました: {request.remote}")
+    return ws
+
 
 async def main():
     """
-    WebSocketサーバーを起動するメイン関数
+    aiohttpウェブサーバーとWebSocketサーバーを起動するメイン関数
     """
+    app = web.Application()
+
+    # 静的ファイルの提供
+    app.router.add_static('/', './public')
+
+    # WebSocketハンドラの追加
+    app.router.add_get('/websocket', websocket_handler)
+
     # Render環境では環境変数からポートとホストを取得
-    host = os.environ.get("HOST", "0.0.0.0") # 外部からの接続を許可
-    port = int(os.environ.get("PORT", 8765)) # 環境変数PORTから取得、デフォルトは8765
-    async with websockets.serve(handler, host, port):
-        print(f"WebSocketサーバーが http://{host}:{port} で起動しました。")
-        print("ブラウザで /home/hirosi/my_gemini_project/yggdrasil_web/public/index.html を開いてください。")
-        await asyncio.Future()
+    host = os.environ.get("HOST", "0.0.0.0")
+    port = int(os.environ.get("PORT", 8765))
+
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, host, port)
+    await site.start()
+
+    print(f"aiohttpサーバーが http://{host}:{port} で起動しました。")
+    print(f"WebSocketは ws://{host}:{port}/websocket で利用可能です。")
+
+    # サーバーを起動し続けるためにFutureを待機
+    await asyncio.Future()
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
         print("\nサーバーをシャットダウンします。")
+    except Exception as e:
+        print(f"サーバーの起動中にエラーが発生しました: {e}")
+        import traceback
+        traceback.print_exc()
