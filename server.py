@@ -21,7 +21,7 @@ async def websocket_handler(request):
 
     game_command = [
         "python3",
-        "./yggdrasil_orchestrator.py"
+        "./yggdrasil_orchestrator_v2.py" # 相対パス
     ]
     
     process = await asyncio.create_subprocess_exec(
