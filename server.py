@@ -104,8 +104,13 @@ async def main():
     """
     app = web.Application()
 
-    # 静的ファイルの提供
-    app.router.add_static('/', './public')
+    # 静的ファイルの提供 (public ディレクトリ全体)
+    app.router.add_static('/public', './public') # /public/index.html でアクセス可能
+
+    # ルートパスへのアクセス時に index.html を返すハンドラ
+    async def index_handler(request):
+        return web.FileResponse('./public/index.html')
+    app.router.add_get('/', index_handler)
 
     # WebSocketハンドラの追加
     app.router.add_get('/websocket', websocket_handler)
