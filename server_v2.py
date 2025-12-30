@@ -135,7 +135,7 @@ async def main():
 
     # ルートパスへのアクセス時に index.html を返すハンドラ
     async def index_handler(request):
-        return web.FileResponse('./public/index.html')
+        return web.FileResponse('./public/index_v2.html')
     app.router.add_get('/', index_handler)
 
     # WebSocketハンドラの追加
