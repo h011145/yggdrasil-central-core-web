@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yggdrasil Central Core</title>
+    <link rel="stylesheet" href="xterm.css" /> <!-- Relative path for Static Site -->
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background-color: #000;
+        }
+        #terminal {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="terminal"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
+    <script src="main.js"></script> <!-- Relative path for Static Site -->
+    <script>
+        // WebSocket URL needs to be the URL of the separate Web Service
+        // Placeholder for now. Dr. Hiroshi will need to get this URL from Render.
+        const websocketUrl = 'wss://YOUR_WEBSOCKET_SERVICE_NAME.onrender.com/websocket'; 
+        const socket = new WebSocket(websocketUrl);
+
+        // xterm.jsのターミナルを初期化
+        const term = new Terminal({
+            cursorBlink: true,
+            theme: {
+                background: '#000000',
+                foreground: '#00FF00',
+            }
+        });
+        const fitAddon = new FitAddon.FitAddon();
+        term.loadAddon(fitAddon);
+
+        // 'terminal'というIDを持つdiv要素にターミナルをアタッチ
+        term.open(document.getElementById('terminal'));
+
+        function sendTerminalSize() {
+            if (socket.readyState === WebSocket.OPEN) {
+                const size = {
+                    type: 'resize',
+                    cols: term.cols,
+                    rows: term.rows
+                };
+                socket.send(JSON.stringify(size));
+            }
+        }
+
+        // 接続が開いたときのイベント
+        socket.onopen = function(event) {
+            term.write('サーバーに接続しました。\r\n');
+            // 接続時に最初のサイズを送信
+            fitAddon.fit();
+            sendTerminalSize();
+        };
+
+        // サーバーからメッセージを受信したときのイベント
+        socket.onmessage = function(event) {
+            // サーバーからのデータをターミナルに書き込む
+            term.write(event.data);
+        };
+
+        // ターミナルでユーザーがキー入力したときのイベント
+        term.onData(data => {
+            // 入力されたデータをWebSocket経由でサーバーに送信
+            const message = { type: 'input', data: data };
+            socket.send(JSON.stringify(message));
+        });
+
+        // 接続が閉じたときのイベント
+        socket.onclose = function(event) {
+            term.write('\r\nサーバーとの接続が切れました。');
+        };
+
+        // エラーが発生したときのイベント
+        socket.onerror = function(error) {
+            term.write('\r\nエラーが発生しました: ' + error.message);
+        };
+
+        // ウィンドウサイズが変更されたときにターミナルのサイズを調整し、サーバーに通知
+        window.addEventListener('resize', () => {
+            fitAddon.fit();
+            sendTerminalSize();
+        });
+    </script>
+</body>
+</html>
