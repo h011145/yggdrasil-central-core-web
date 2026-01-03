@@ -1,64 +1,30 @@
-// xterm.jsのターミナルを初期化
 const term = new Terminal({
     cursorBlink: true,
-    theme: {
-        background: '#000000',
-        foreground: '#00FF00',
-    }
+    fontSize: 18,
+    fontFamily: 'Courier New, monospace'
 });
-const fitAddon = new FitAddon.FitAddon();
-term.loadAddon(fitAddon);
-
-// 'terminal'というIDを持つdiv要素にターミナルをアタッチ
 term.open(document.getElementById('terminal'));
 
-// WebSocketサーバーに接続
-const socket = new WebSocket(`wss://${window.location.host}/websocket`);
+// サーバーのURL（自分のRenderのURLに書き換えてください）
+const socket = new WebSocket('wss://yggdrasil-websocket-backend.onrender.com/websocket');
 
-function sendTerminalSize() {
-    if (socket.readyState === WebSocket.OPEN) {
-        const size = {
-            type: 'resize',
-            cols: term.cols,
-            rows: term.rows
-        };
-        socket.send(JSON.stringify(size));
-    }
-}
-
-// 接続が開いたときのイベント
-socket.onopen = function(event) {
-    term.write('サーバーに接続しました。\r\n');
-    // 接続時に最初のサイズを送信
-    fitAddon.fit();
-    sendTerminalSize();
+socket.onopen = () => {
+    term.write('[SYSTEM] サーバーに接続しました。\r\n');
 };
 
-// サーバーからメッセージを受信したときのイベント
-socket.onmessage = function(event) {
-    // サーバーからのデータをターミナルに書き込む
+// サーバーからのデータ（文字）を画面に表示
+socket.onmessage = (event) => {
     term.write(event.data);
 };
 
-// ターミナルでユーザーがキー入力したときのイベント
+// 【重要】キーボード入力をサーバーに送る処理
 term.onData(data => {
-    // 入力されたデータをWebSocket経由でサーバーに送信
-    const message = { type: 'input', data: data };
-    socket.send(JSON.stringify(message));
+    if (socket.readyState === WebSocket.OPEN) {
+        // 文字をそのまま送るとバックエンドが受け取れないことがあるためJSONで送る
+        socket.send(JSON.stringify({ type: 'input', data: data }));
+    }
 });
 
-// 接続が閉じたときのイベント
-socket.onclose = function(event) {
-    term.write('\r\nサーバーとの接続が切れました。');
+socket.onclose = () => {
+    term.write('\r\n[ERROR] サーバーとの接続が切れました。再読み込みしてください。\r\n');
 };
-
-// エラーが発生したときのイベント
-socket.onerror = function(error) {
-    term.write('\r\nエラーが発生しました: ' + error.message);
-};
-
-// ウィンドウサイズが変更されたときにターミナルのサイズを調整し、サーバーに通知
-window.addEventListener('resize', () => {
-    fitAddon.fit();
-    sendTerminalSize();
-});
