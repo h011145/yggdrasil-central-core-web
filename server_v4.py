@@ -14,14 +14,14 @@ async def websocket_handler(request):
     await ws.prepare(request)
     print(f"クライアントが接続しました: {request.remote}")
 
-    # 絶対パスの取得
     base_path = os.path.dirname(os.path.abspath(__file__))
     orchestrator_path = os.path.join(base_path, "yggdrasil_orchestrator_v3.py")
 
+    # PTYの作成
     master_fd, slave_fd = pty.openpty()
 
-    # コマンドの構成（sys.executableで現在のPythonを確実に使用）
-    game_command = [sys.executable, orchestrator_path]
+    # 実行コマンドの構成
+    game_command = [sys.executable, "-u", orchestrator_path]
     
     try:
         process = await asyncio.create_subprocess_exec(
@@ -33,16 +33,11 @@ async def websocket_handler(request):
         )
     except Exception as e:
         print(f"プロセス起動失敗: {e}")
+        await ws.send_str(f"\r\n[SYSTEM ERROR] 起動失敗: {e}")
         await ws.close()
         return ws
 
-    async def monitor_process():
-        await process.wait()
-        print(f"ゲーム終了 (PID: {process.pid}) Exit Code: {process.returncode}")
-    async def run_monitor():
-        await monitor_process()
-    asyncio.create_task(run_monitor())
-
+    # 非ブロッキング設定
     fcntl.fcntl(master_fd, fcntl.F_SETFL, os.O_NONBLOCK)
 
     async def forward_pty_to_ws():
@@ -50,7 +45,8 @@ async def websocket_handler(request):
         try:
             while process.returncode is None:
                 try:
-                    output = await loop.run_in_executor(None, lambda: os.read(master_fd, 1024))
+                    # PTYからの出力を読み取ってWebSocketへ送る
+                    output = await loop.run_in_executor(None, lambda: os.read(master_fd, 4096))
                     if output:
                         await ws.send_str(output.decode('utf-8', errors='replace'))
                 except (BlockingIOError, OSError):
@@ -62,16 +58,25 @@ async def websocket_handler(request):
         try:
             async for msg in ws:
                 if msg.type == web.WSMsgType.TEXT:
-                    data = json.loads(msg.data)
-                    if data['type'] == 'resize':
-                        winsize = struct.pack("HHHH", data['rows'], data['cols'], 0, 0)
+                    payload = json.loads(msg.data)
+                    
+                    if payload['type'] == 'resize':
+                        winsize = struct.pack("HHHH", payload['rows'], payload['cols'], 0, 0)
                         fcntl.ioctl(master_fd, termios.TIOCSWINSZ, winsize)
-                    elif data['type'] == 'input':
-                        os.write(master_fd, data['data'].encode('utf-8'))
+                    
+                    elif payload['type'] == 'input':
+                        # 重要: 受信したキー入力をPTYのマスター側に書き込む
+                        input_data = payload['data'].encode('utf-8')
+                        os.write(master_fd, input_data)
+                        
         except Exception as e:
             print(f"WSリードエラー: {e}")
 
+    # 両方のタスクを並行実行
     await asyncio.gather(forward_pty_to_ws(), forward_ws_to_pty())
+    
+    os.close(master_fd)
+    os.close(slave_fd)
     return ws
 
 async def main():
