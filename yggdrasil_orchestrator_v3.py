@@ -1,60 +1,46 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 import sys
 import os
 import time
 
+# ゲーム本体（archive_next_war.py）を読み込む
+try:
+    from games.archive_next_war import NextWarGame
+except ImportError:
+    # パスが通っていない場合の予備処理
+    sys.path.append(os.path.join(os.path.dirname(__file__), 'games'))
+    from archive_next_war import NextWarGame
+
 def main():
-    # 画面を綺麗にする
+    # 画面を一度クリア
     sys.stdout.write("\033[2J\033[H")
+    sys.stdout.flush()
     
-    print("Selecting slot... (Simulated)")
-    print("\nカナタ: 「接続を感知。……またやるの？」")
-    print("\n" + "="*50)
-    print(" YGGDRASIL CENTRAL CORE - TEST MODE")
-    print("="*50)
-    print("カナタ: 「ひろしの神格レベル 1。ガレージポイント 3000。」")
+    # テスト用プロファイル
+    profile = {"divine_level": 1, "garage_points": 3000, "base_hp": 500, "attack_buff": 50}
     
-    # プログラムが終了しないようにループを作る
     while True:
-        print("\n--- 【メニュー】番号を打って Enter を押してね ---")
-        print(" 1: 義体改造 (GARAGE)")
-        print(" 2: 戦闘アーカイブ (COMBAT)")
-        print(" 3: ネクスト戦記 (NEXT WAR)")
-        print(" q: 終了する")
+        print("\n" + "="*50)
+        print(" YGGDRASIL CENTRAL CORE - ORCHESTRATOR v3")
+        print("="*50)
+        print(" [3] ネクスト戦記 (NEXT WAR) 起動")
+        print(" [q] システム終了")
         print("-" * 50)
-        
-        # ここでユーザーの入力をじっと待ちます
-        sys.stdout.write("どれにする？ > ")
+        sys.stdout.write("COMMAND > ")
         sys.stdout.flush()
         
-        # 入力を受け取る（Enterを押すまでここで止まります）
         line = sys.stdin.readline()
-        
-        if not line:
-            break
-            
-        choice = line.strip().lower()
+        if not line: break
+        cmd = line.strip().lower()
 
-        # 入力内容に応じた反応
-        if choice == '1':
-            print("\nカナタ: 「ガレージを開くよ。でも今は準備中なんだ。」")
-        elif choice == '2':
-            print("\nカナタ: 「戦闘シミュレーションをロードするね…（準備中）」")
-        elif choice == '3':
-            print("\nカナタ: 「ネクスト戦記……あの地獄に戻るつもり？」")
-        elif choice == 'q':
-            print("\nカナタ: 「バイバイ、ひろし。また接続してね。」")
-            break # ここで初めてループを抜けて終了する
-        else:
-            print(f"\nカナタ: 「 '{choice}' ？ ……ちょっと、真面目に選んでよ。」")
-        
-        print("\n" + "." * 30)
-        time.sleep(0.5)
+        if cmd == '3':
+            # 本番のゲームクラスを起動
+            game = NextWarGame(None, profile)
+            game.play()
+            sys.stdout.write("\033[2J\033[H") # 戻ってきたら画面クリア
+        elif cmd == 'q':
+            print("\nシステムを終了します。またの接続を。")
+            break
 
 if __name__ == "__main__":
-    try:
-        main()
-    except Exception as e:
-        print(f"エラーが発生したよ: {e}")
+    main()
