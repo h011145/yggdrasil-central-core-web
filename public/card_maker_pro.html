@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Card Maker Pro - Hall of Fame Edition</title>
+    <!-- PWA Meta Tags for App-like behavior -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Noto+Sans+JP:wght@300;700&display=swap');
+        
+        body { 
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+            color: #f1f5f9;
+            font-family: 'Noto Sans JP', sans-serif;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .hall-of-fame-bg {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: 
+                linear-gradient(rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.9)),
+                url('https://images.unsplash.com/photo-1614850523296-d8c1af93d400?auto=format&fit=crop&q=80&w=2070');
+            background-size: cover;
+            z-index: -1;
+        }
+
+        .launcher-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(20px);
+            border: 2px solid #d4af37;
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
+            border-radius: 24px;
+            animation: fadeIn 1s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .gold-text {
+            font-family: 'Cinzel', serif;
+            background: linear-gradient(to bottom, #fde68a, #d4af37, #b45309);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        #appOverlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #0f172a;
+            z-index: 100;
+            display: none;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center p-4">
+    <div class="hall-of-fame-bg"></div>
+
+    <!-- Launcher UI -->
+    <div id="launcherUI" class="launcher-card p-10 max-w-lg w-full text-center">
+        <div class="mb-6">
+            <span class="text-6xl mb-4 block">🏆</span>
+            <h2 class="text-sm tracking-[0.3em] text-amber-500 font-bold uppercase mb-2">Hall of Fame Edition</h2>
+            <h1 class="text-4xl font-black gold-text mb-4">CARD MAKER PRO</h1>
+        </div>
+        
+        <p class="text-slate-400 text-sm mb-8 leading-relaxed">
+            このアプリケーションは「殿堂入り」として認定されました。<br>
+            最高品質のカード作成環境をいつでも提供します。
+        </p>
+
+        <div class="space-y-4">
+            <button onclick="launchApp()" class="w-full bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-slate-900 font-black py-4 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-[0_0_20px_rgba(212,175,55,0.4)]">
+                アプリを起動する
+            </button>
+            
+            <button onclick="toggleHowTo()" class="w-full bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 font-bold py-3 rounded-xl border border-slate-700 transition-all">
+                インストール方法
+            </button>
+        </div>
+
+        <div id="installGuide" class="hidden mt-6 text-left p-4 bg-slate-900/50 rounded-lg border border-slate-800 text-xs text-slate-400">
+            <p class="font-bold text-slate-300 mb-2">デスクトップ/ホーム画面に追加：</p>
+            <ol class="list-decimal list-inside space-y-1">
+                <li>ブラウザのメニューアイコン（︙または共有）をクリック</li>
+                <li>「ホーム画面に追加」または「アプリをインストール」を選択</li>
+                <li>いつでもこのアイコンから起動可能になります</li>
+            </ol>
+        </div>
+    </div>
+
+    <!-- The Actual App Container -->
+    <div id="appOverlay">
+        <div class="p-4 md:p-8">
+            <button onclick="closeApp()" class="mb-4 text-slate-400 hover:text-white flex items-center gap-2">
+                ← ランチャーに戻る
+            </button>
+            <div id="appContent">
+                <!-- ここにメインのカードメーカーHTMLを動的にロード、または埋め込む -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // アプリケーションのメインHTMLコンテンツ
+        const appHTML = `
+            <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10">
+                <div class="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 space-y-6">
+                    <div class="flex items-center gap-3">
+                        <span class="text-3xl">🎴</span>
+                        <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-amber-400 to-yellow-400">Card Maker Pro</h1>
+                    </div>
+                    <section class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 mb-1">メイン画像</label>
+                            <input type="file" id="imageInput" accept="image/*" class="w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-amber-500 file:text-slate-900 hover:file:bg-amber-600">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <input type="text" id="cardName" value="伝説のカード" placeholder="カード名" class="bg-slate-900 border border-slate-700 p-3 rounded-lg w-full">
+                            <select id="rarity" class="bg-slate-900 border border-slate-700 p-3 rounded-lg w-full">
+                                <option>LEGENDARY</option><option selected>SSR</option><option>SR</option><option>RARE</option>
+                            </select>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <input type="color" id="frameColor" value="#d4af37" class="w-full h-10 bg-transparent cursor-pointer">
+                            <input type="color" id="accentColor" value="#ffffff" class="w-full h-10 bg-transparent cursor-pointer">
+                        </div>
+                        <textarea id="description" rows="3" class="bg-slate-900 border border-slate-700 p-3 rounded-lg w-full text-sm">殿堂入りを記念して作成された伝説のカード。</textarea>
+                    </section>
+                    <button id="downloadBtn" class="w-full bg-amber-500 text-slate-900 font-bold py-4 rounded-xl hover:bg-amber-600">💾 画像を保存</button>
+                </div>
+                <div class="flex flex-col items-center">
+                    <canvas id="cardCanvas" width="600" height="840" class="max-w-full rounded-xl shadow-2xl border border-amber-500/30"></canvas>
+                </div>
+            </div>
+        `;
+
+        function launchApp() {
+            const overlay = document.getElementById('appOverlay');
+            const content = document.getElementById('appContent');
+            overlay.style.display = 'block';
+            content.innerHTML = appHTML;
+            
+            // アプリのロジックを再バインド
+            setTimeout(initializeCardLogic, 100);
+        }
+
+        function closeApp() {
+            document.getElementById('appOverlay').style.display = 'none';
+        }
+
+        function toggleHowTo() {
+            const guide = document.getElementById('installGuide');
+            guide.classList.toggle('hidden');
+        }
+
+        function initializeCardLogic() {
+            const canvas = document.getElementById('cardCanvas');
+            const ctx = canvas.getContext('2d');
+            const inputs = ['cardName', 'rarity', 'frameColor', 'accentColor', 'description'];
+            let bgImage = null;
+
+            function draw() {
+                const w = canvas.width; const h = canvas.height;
+                const fColor = document.getElementById('frameColor').value;
+                const aColor = document.getElementById('accentColor').value;
+                
+                ctx.fillStyle = '#0a0a0a'; ctx.fillRect(0, 0, w, h);
+                if (bgImage) {
+                    const scale = Math.max(w / bgImage.width, h / bgImage.height);
+                    ctx.drawImage(bgImage, (w/2)-(bgImage.width*scale/2), (h/2)-(bgImage.height*scale/2), bgImage.width*scale, bgImage.height*scale);
+                }
+
+                // UI Overlay & Textures
+                const grad = ctx.createLinearGradient(0, h-300, 0, h);
+                grad.addColorStop(0, 'transparent'); grad.addColorStop(1, 'rgba(0,0,0,0.9)');
+                ctx.fillStyle = grad; ctx.fillRect(0, h-300, w, 300);
+
+                // Frame
+                ctx.strokeStyle = fColor; ctx.lineWidth = 24;
+                ctx.strokeRect(12, 12, w-24, h-24);
+                ctx.strokeStyle = aColor; ctx.lineWidth = 2;
+                ctx.strokeRect(36, 36, w-72, h-72);
+
+                // Corners
+                const L = 60; const t = 10;
+                [[0,0,1,1],[w,0,-1,1],[0,h,1,-1],[w,h,-1,-1]].forEach(([x,y,dx,dy]) => {
+                    ctx.fillStyle = fColor; ctx.beginPath();
+                    ctx.moveTo(x,y); ctx.lineTo(x+L*dx, y); ctx.lineTo(x+L*dx, y+t*dy);
+                    ctx.lineTo(x+t*dx, y+t*dy); ctx.lineTo(x+t*dx, y+L*dy); ctx.lineTo(x, y+L*dy);
+                    ctx.closePath(); ctx.fill();
+                });
+
+                // Text
+                ctx.fillStyle = 'white'; ctx.font = 'bold 50px sans-serif';
+                ctx.fillText(document.getElementById('cardName').value, 50, h-110);
+                ctx.font = '20px sans-serif';
+                ctx.fillText(document.getElementById('description').value, 50, h-60);
+                
+                // Rarity
+                ctx.fillStyle = fColor; ctx.fillRect(45, h-210, 160, 45);
+                ctx.fillStyle = 'black'; ctx.font = 'bold 28px sans-serif';
+                ctx.fillText(document.getElementById('rarity').value, 55, h-178);
+            }
+
+            inputs.forEach(id => document.getElementById(id).addEventListener('input', draw));
+            document.getElementById('imageInput').onchange = (e) => {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const img = new Image();
+                    img.onload = () => { bgImage = img; draw(); };
+                    img.src = ev.target.result;
+                };
+                reader.readAsDataURL(e.target.files[0]);
+            };
+            
+            document.getElementById('downloadBtn').onclick = () => {
+                const link = document.createElement('a');
+                link.download = 'hall-of-fame-card.png';
+                link.href = canvas.toDataURL();
+                link.click();
+            };
+            draw();
+        }
+    </script>
+</body>
+</html>
