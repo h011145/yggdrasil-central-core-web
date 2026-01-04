@@ -1,66 +1,84 @@
-// xterm.jsのターミナルを初期化
-const term = new Terminal({
-    cursorBlink: true,
-    theme: {
-        background: '#000000',
-        foreground: '#00FF00',
-    }
-});
-const fitAddon = new FitAddon.FitAddon();
-term.loadAddon(fitAddon);
+document.addEventListener('DOMContentLoaded', () => {
+    const clickToStart = document.getElementById('click-to-start');
+    const canvas = document.getElementById('game-canvas');
+    const ctx = canvas.getContext('2d');
+    let socket;
 
-// 'terminal'というIDを持つdiv要素にターミナルをアタッチ
-term.open(document.getElementById('terminal'));
+    // ゲーム画面の解像度（バックエンドと合わせる）
+    const GAME_WIDTH = 800;
+    const GAME_HEIGHT = 600;
 
-// WebSocketサーバーに接続
-const socket = new WebSocket('wss://yggdrasil-websocket-backend.onrender.com/websocket');
+    canvas.width = GAME_WIDTH;
+    canvas.height = GAME_HEIGHT;
 
-function sendTerminalSize() {
-    if (socket.readyState === WebSocket.OPEN) {
-        const size = {
-            type: 'resize',
-            cols: term.cols,
-            rows: term.rows
+    clickToStart.addEventListener('click', () => {
+        clickToStart.style.display = 'none';
+        canvas.style.display = 'block';
+        connectWebSocket();
+    }, { once: true }); // イベントリスナーを一度だけ実行
+
+    function connectWebSocket() {
+        socket = new WebSocket('wss://yggdrasil-websocket-backend.onrender.com/websocket');
+
+        socket.onopen = () => {
+            console.log('[SYSTEM] WebSocket connection established.');
+            // 接続成功したら、キー入力のリスニングを開始
+            setupKeyboardListeners();
         };
-        socket.send(JSON.stringify(size));
+
+        socket.onmessage = (event) => {
+            // 受信したのが画像データの場合
+            if (event.data instanceof Blob) {
+                const image = new Image();
+                image.src = URL.createObjectURL(event.data);
+                image.onload = () => {
+                    ctx.drawImage(image, 0, 0);
+                    URL.revokeObjectURL(image.src); // メモリ解放
+                };
+            }
+            // 受信したのがテキストデータの場合（デバッグ用）
+            else {
+                console.log('[SERVER]', event.data);
+            }
+        };
+
+        socket.onclose = () => {
+            console.error('[SYSTEM] WebSocket connection closed.');
+            // エラーメッセージをCanvasに表示
+            ctx.fillStyle = 'red';
+            ctx.font = '20px "Courier New"';
+            ctx.textAlign = 'center';
+            ctx.fillText('サーバーとの接続が切れました。再読み込みしてください。', GAME_WIDTH / 2, GAME_HEIGHT / 2);
+        };
+
+        socket.onerror = (error) => {
+            console.error('[SYSTEM] WebSocket error:', error);
+            ctx.fillStyle = 'red';
+            ctx.font = '20px "Courier New"';
+            ctx.textAlign = 'center';
+            ctx.fillText('接続エラーが発生しました。', GAME_WIDTH / 2, GAME_HEIGHT / 2);
+        };
     }
-}
 
-// 接続が開いたときのイベント
-socket.onopen = () => {
-    term.write('\x1b[1;33m[SYSTEM] サーバーに接続しました。\x1b[0m\r\n');
-    term.write('\x1b[1;32m【重要】まずこの黒い画面内を一度クリックしてください。\x1b[0m\r\n');
-    term.write('\x1b[1;32mそのあと、キーボードで入力が可能になります。\x1b[0m\r\n');
-    term.write('--------------------------------------------------\r\n');
-    // 接続時に最初のサイズを送信
-    fitAddon.fit();
-    sendTerminalSize();
-};
+    function setupKeyboardListeners() {
+        window.addEventListener('keydown', (event) => {
+            sendKeyEvent('keydown', event.key);
+            event.preventDefault(); // ブラウザのデフォルト動作を抑制
+        });
 
-// サーバーからメッセージを受信したときのイベント
-socket.onmessage = (event) => {
-    term.write(event.data);
-};
-
-// ターミナルでユーザーがキー入力したときのイベント
-term.onData(data => {
-    if (socket && socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({ type: 'input', data: data }));
+        window.addEventListener('keyup', (event) => {
+            sendKeyEvent('keyup', event.key);
+            event.preventDefault();
+        });
     }
-});
 
-// 接続が閉じたときのイベント
-socket.onclose = () => {
-    term.write('\r\n\x1b[1;31m[ERROR] 接続が切れました。再読み込みしてください。\x1b[0m\r\n');
-};
-
-// エラーが発生したときのイベント
-socket.onerror = function(error) {
-    term.write('\r\nエラーが発生しました: ' + error.message);
-};
-
-// ウィンドウサイズが変更されたときにターミナルのサイズを調整し、サーバーに通知
-window.addEventListener('resize', () => {
-    fitAddon.fit();
-    sendTerminalSize();
+    function sendKeyEvent(type, key) {
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({
+                type: 'key_event',
+                event: type,
+                key: key
+            }));
+        }
+    }
 });

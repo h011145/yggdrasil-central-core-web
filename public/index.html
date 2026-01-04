@@ -3,27 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yggdrasil Central Core</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css" />
+    <title>Yggdrasil Central Core - Pygame Edition</title>
     <style>
         body, html {
             margin: 0;
             padding: 0;
             height: 100%;
             background-color: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             overflow: hidden;
+            font-family: 'Courier New', Courier, monospace;
         }
-        #terminal {
-            width: 100%;
-            height: 100%;
+        #game-container {
+            position: relative;
+        }
+        #game-canvas {
+            display: none; /* Initially hidden */
+            background-color: #111;
+        }
+        #click-to-start {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #00ff00;
+            font-size: 2em;
+            cursor: pointer;
+            text-align: center;
+            border: 2px solid #00ff00;
+            padding: 20px;
+            background-color: rgba(0, 20, 0, 0.8);
         }
     </style>
 </head>
 <body>
-    <div id="terminal"></div>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+        <div id="click-to-start">
+            【重要】ここをクリックして同期を開始<br>（画面フォーカス）
+        </div>
+    </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
-    <script src="main.js"></script> <!-- Relative path for Static Site -->
+    <script src="main.js"></script>
 </body>
 </html>
