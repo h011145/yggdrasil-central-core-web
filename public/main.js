@@ -13,7 +13,7 @@ term.loadAddon(fitAddon);
 term.open(document.getElementById('terminal'));
 
 // WebSocketサーバーに接続
-const socket = new WebSocket(`wss://${window.location.host}/websocket`);
+const socket = new WebSocket('wss://yggdrasil-websocket-backend.onrender.com/websocket');
 
 function sendTerminalSize() {
     if (socket.readyState === WebSocket.OPEN) {
