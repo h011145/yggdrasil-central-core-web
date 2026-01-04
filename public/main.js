@@ -1,35 +1,34 @@
-// main.js - 修正版
-const term = new Terminal({
+// 既存の定義とぶつからないように var を使用
+var term = term || new Terminal({
     cursorBlink: true,
     fontSize: 18
 });
-term.open(document.getElementById('terminal'));
 
-// URLを現在のバックエンドのものに修正してください（wss://...）
-// 末尾に /websocket が付いていることを確認してください
-const socket = new WebSocket('wss://yggdrasil-websocket-backend.onrender.com/websocket');
+// まだ開いていなければターミナルを開始
+if (!document.getElementById('terminal').innerHTML) {
+    term.open(document.getElementById('terminal'));
+}
 
-socket.onopen = () => {
-    term.write('[SYSTEM] サーバーに接続しました。\r\n');
+// 接続先URL（自分のRenderのバックエンドURLであることを確認してください）
+var socketUrl = 'wss://yggdrasil-websocket-backend.onrender.com/websocket';
+var socket = new WebSocket(socketUrl);
+
+socket.onopen = function() {
+    term.write('[SYSTEM] サーバーに接続しました。入力待ちです...\r\n');
 };
 
-socket.onmessage = (event) => {
-    // サーバーからデータが届いたら画面に表示
+socket.onmessage = function(event) {
     term.write(event.data);
 };
 
-// 入力処理：二重定義を避け、確実に1文字ずつ送る
-term.onData(data => {
+// 入力をサーバーに送る
+term.onData(function(data) {
     if (socket && socket.readyState === WebSocket.OPEN) {
-        // バックエンドがJSON形式を待っている場合はこちら
+        // 現在のサーバー設定に合わせてJSON形式で送信
         socket.send(JSON.stringify({ type: 'input', data: data }));
     }
 });
 
-socket.onerror = (error) => {
-    console.error('WebSocket Error:', error);
-};
-
-socket.onclose = () => {
-    term.write('\r\n[ERROR] サーバーとの接続が切れました。\r\n');
+socket.onclose = function() {
+    term.write('\r\n[ERROR] サーバーとの接続が切れました。再読み込みしてください。\r\n');
 };
