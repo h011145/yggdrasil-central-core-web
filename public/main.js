@@ -28,7 +28,10 @@ function sendTerminalSize() {
 
 // 接続が開いたときのイベント
 socket.onopen = function(event) {
-    term.write('サーバーに接続しました。\r\n');
+    term.write('サーバーに接続しました。
+');
+    term.write('画面をクリックして、ターミナル操作を有効にしてください。
+');
     // 接続時に最初のサイズを送信
     fitAddon.fit();
     sendTerminalSize();
