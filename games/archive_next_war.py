@@ -1,70 +1,76 @@
 #!/usr/bin/env python3
-import asyncio
-import os
 import sys
-import pty
-import fcntl
-import termios
-import json
-import struct
-from aiohttp import web
+import random
+import time
 
-async def websocket_handler(request):
-    ws = web.WebSocketResponse()
-    await ws.prepare(request)
-    print(f"Connection from: {request.remote}")
+class NextWarGame:
+    def __init__(self, stdscr, profile):
+        self.profile = profile
+        self.logs = ["《ネクスト戦記》Webアーカイブ・同期完了。"]
+        # マップサイズ（ブラウザの画面に収まるサイズ）
+        self.MAP_WIDTH = 20
+        self.MAP_HEIGHT = 10
+        self.player_q = 10
+        self.player_r = 5
+        self.enemies = []
+        self.spawn_enemies(5)
 
-    base_path = os.path.dirname(os.path.abspath(__file__))
-    orchestrator_path = os.path.join(base_path, "yggdrasil_orchestrator_v3.py")
+    def spawn_enemies(self, count):
+        for _ in range(count):
+            self.enemies.append({
+                "q": random.randint(0, self.MAP_WIDTH - 1),
+                "r": random.randint(0, self.MAP_HEIGHT - 1),
+                "hp": 100
+            })
 
-    master_fd, slave_fd = pty.openpty()
+    def play(self):
+        while True:
+            self.draw_hex_map()
+            sys.stdout.write("\n移動(w/a/s/d) または 終了(q) > ")
+            sys.stdout.flush()
+            
+            # 入力待機
+            cmd = sys.stdin.readline().strip().lower()
+            if cmd == 'q': 
+                self.logs.append("作戦を中断して帰還します。")
+                break
+            
+            # 移動処理
+            old_q, old_r = self.player_q, self.player_r
+            if cmd == 'w': self.player_r -= 1
+            elif cmd == 's': self.player_r += 1
+            elif cmd == 'a': self.player_q -= 1
+            elif cmd == 'd': self.player_q += 1
+            
+            # 範囲外チェック
+            self.player_q = max(0, min(self.MAP_WIDTH - 1, self.player_q))
+            self.player_r = max(0, min(self.MAP_HEIGHT - 1, self.player_r))
+            
+            if (old_q, old_r) != (self.player_q, self.player_r):
+                self.logs.append(f"Q:{self.player_q}, R:{self.player_r} へ移動。")
 
-    # ゲームプロセスの起動 (-u でバッファリングを無効化)
-    process = await asyncio.create_subprocess_exec(
-        sys.executable, "-u", orchestrator_path,
-        stdin=slave_fd, stdout=slave_fd, stderr=slave_fd,
-        preexec_fn=os.setsid
-    )
+    def draw_hex_map(self):
+        # 画面をリセットして描画
+        sys.stdout.write("\033[2J\033[H")
+        print("=== NEXT WAR: HEX STRATEGY ARCHIVE ===")
+        print(f" プレイヤー: Q:{self.player_q}, R:{self.player_r}")
+        print("-" * 50)
 
-    fcntl.fcntl(master_fd, fcntl.F_SETFL, os.O_NONBLOCK)
+        for r in range(self.MAP_HEIGHT):
+            line = ""
+            # HEXっぽさを出すために奇数行をずらす
+            if r % 2 == 1: line += "  "
+            
+            for q in range(self.MAP_WIDTH):
+                if q == self.player_q and r == self.player_r:
+                    line += "\x1b[1;32m[P]\x1b[0m" # 緑色のプレイヤー
+                elif any(e['q'] == q and e['r'] == r for e in self.enemies):
+                    line += "\x1b[1;31m[E]\x1b[0m" # 赤色の敵
+                else:
+                    line += " . " # 平地
+            print(line)
 
-    async def pty_to_ws():
-        loop = asyncio.get_event_loop()
-        try:
-            while process.returncode is None:
-                try:
-                    output = await loop.run_in_executor(None, lambda: os.read(master_fd, 4096))
-                    if output:
-                        await ws.send_str(output.decode('utf-8', errors='replace'))
-                except (BlockingIOError, OSError):
-                    await asyncio.sleep(0.01)
-        except Exception as e: print(f"PTY Error: {e}")
-
-    async def ws_to_pty():
-        try:
-            async for msg in ws:
-                if msg.type == web.WSMsgType.TEXT:
-                    data = json.loads(msg.data)
-                    if data['type'] == 'input':
-                        # 入力文字をPTYに書き込む
-                        os.write(master_fd, data['data'].encode('utf-8'))
-                    elif data['type'] == 'resize':
-                        winsize = struct.pack("HHHH", data['rows'], data['cols'], 0, 0)
-                        fcntl.ioctl(master_fd, termios.TIOCSWINSZ, winsize)
-        except Exception as e: print(f"WS Error: {e}")
-
-    await asyncio.gather(pty_to_ws(), ws_to_pty())
-    return ws
-
-async def main():
-    app = web.Application()
-    app.router.add_get('/websocket', websocket_handler)
-    port = int(os.environ.get("PORT", 10000))
-    runner = web.AppRunner(app)
-    await runner.setup()
-    await web.TCPSite(runner, '0.0.0.0', port).start()
-    print(f"Backend Server running on {port}")
-    await asyncio.Future()
-
-if __name__ == "__main__":
-    asyncio.run(main())
+        print("-" * 50)
+        print("--- SYSTEM LOG ---")
+        for log in self.logs[-3:]:
+            print(f" {log}")
