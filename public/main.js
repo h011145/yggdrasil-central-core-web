@@ -27,32 +27,31 @@ function sendTerminalSize() {
 }
 
 // 接続が開いたときのイベント
-socket.onopen = function(event) {
-    term.write('サーバーに接続しました。
-');
-    term.write('画面をクリックして、ターミナル操作を有効にしてください。
-');
+socket.onopen = () => {
+    term.write('\x1b[1;33m[SYSTEM] サーバーに接続しました。\x1b[0m\r\n');
+    term.write('\x1b[1;32m【重要】まずこの黒い画面内を一度クリックしてください。\x1b[0m\r\n');
+    term.write('\x1b[1;32mそのあと、キーボードで入力が可能になります。\x1b[0m\r\n');
+    term.write('--------------------------------------------------\r\n');
     // 接続時に最初のサイズを送信
     fitAddon.fit();
     sendTerminalSize();
 };
 
 // サーバーからメッセージを受信したときのイベント
-socket.onmessage = function(event) {
-    // サーバーからのデータをターミナルに書き込む
+socket.onmessage = (event) => {
     term.write(event.data);
 };
 
 // ターミナルでユーザーがキー入力したときのイベント
 term.onData(data => {
-    // 入力されたデータをWebSocket経由でサーバーに送信
-    const message = { type: 'input', data: data };
-    socket.send(JSON.stringify(message));
+    if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({ type: 'input', data: data }));
+    }
 });
 
 // 接続が閉じたときのイベント
-socket.onclose = function(event) {
-    term.write('\r\nサーバーとの接続が切れました。');
+socket.onclose = () => {
+    term.write('\r\n\x1b[1;31m[ERROR] 接続が切れました。再読み込みしてください。\x1b[0m\r\n');
 };
 
 // エラーが発生したときのイベント
