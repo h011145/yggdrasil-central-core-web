@@ -22,7 +22,8 @@ class CardBattle:
         self.stdscr.clear()
         h, w = self.stdscr.getmaxyx()
         
-        # 外枠
+        # 色設定 (緑)
+        curses.init_pair(1, curses.COLOR_GREEN, -1)
         self.stdscr.attron(curses.color_pair(1))
         self.stdscr.border()
         
@@ -31,7 +32,8 @@ class CardBattle:
         
         # ログエリア
         for i, log in enumerate(self.logs[-5:]):
-            self.stdscr.addstr(5 + i, 4, f"> {log}")
+            if 5 + i < h:
+                self.stdscr.addstr(5 + i, 4, f"> {log}")
 
         # プレイヤーステータス
         self.stdscr.addstr(h-8, 4, f"PLAYER [HP: {'#' * (self.player_hp // 10)}{'-' * (10 - self.player_hp // 10)}] {self.player_hp}%")
@@ -40,20 +42,23 @@ class CardBattle:
         # 手札描画
         for i, card in enumerate(self.hand):
             start_x = 4 + (i * 22)
-            self.stdscr.rectangle(h-6, start_x, h-2, start_x + 20)
-            self.stdscr.addstr(h-5, start_x + 2, f"[{i+1}] {card[0]}")
-            self.stdscr.addstr(h-4, start_x + 2, f"COST: {card[3]}")
+            if start_x + 20 < w:
+                # 簡易的な枠線描画
+                self.stdscr.addstr(h-6, start_x, "+" + "-"*18 + "+")
+                self.stdscr.addstr(h-5, start_x, f"| {card[0][:16]:<16} |")
+                self.stdscr.addstr(h-4, start_x, f"| COST: {card[3]:<10} |")
+                self.stdscr.addstr(h-3, start_x, "+" + "-"*18 + "+")
+                self.stdscr.addstr(h-2, start_x + 8, f"[{i+1}]")
 
-        self.stdscr.addstr(h-1, 2, " [1-3]:Card Select  [Q]:Retreat ")
+        self.stdscr.addstr(h-1, 2, " [1-3]:Select Card  [Q]:Retreat ")
         self.stdscr.refresh()
 
     def play(self):
-        curses.init_pair(1, curses.COLOR_GREEN, -1)
         while self.player_hp > 0 and self.enemy_hp > 0:
             self.draw_ui()
             key = self.stdscr.getch()
             
-            if key == ord('q'): break
+            if key == ord('q') or key == ord('Q'): break
             
             idx = -1
             if key == ord('1'): idx = 0
@@ -63,25 +68,28 @@ class CardBattle:
             if 0 <= idx < len(self.hand):
                 card = self.hand[idx]
                 if self.player_energy >= card[3]:
-                    # プレイヤーのターン
+                    # プレイヤーの攻撃
                     self.player_energy -= card[3]
                     dmg = card[1]
                     self.enemy_hp = max(0, self.enemy_hp - dmg)
-                    self.logs.append(f"YOU: {card[0]} を実行。{dmg}ダメージ。")
+                    self.logs.append(f"YOU: {card[0]} 実行。{dmg}Dmg。")
                     
-                    # 敵のターン（簡易AI）
-                    time.sleep(0.5)
+                    # 敵の反撃（簡易演出）
                     self.draw_ui()
+                    time.sleep(0.3)
                     e_dmg = random.randint(10, 20)
                     self.player_hp = max(0, self.player_hp - e_dmg)
-                    self.logs.append(f"ENEMY: 攻撃を検知。{e_dmg}のダメージ。")
+                    self.logs.append(f"ENEMY: 攻撃を検知。{e_dmg}Dmg受。")
                     
-                    # 手札補充とエネルギー回復
+                    # ターン終了処理
                     self.hand[idx] = random.choice(self.deck)
                     self.player_energy = min(3, self.player_energy + 1)
                 else:
-                    self.logs.append("ERROR: エネルギー不足。")
-
-def main(stdscr):
-    game = CardBattle(stdscr)
-    game.play()
+                    self.logs.append("ERR: エネルギー不足！")
+        
+        # 終了画面
+        self.stdscr.clear()
+        msg = "MISSION COMPLETE" if self.enemy_hp <= 0 else "CONNECTION LOST..."
+        self.stdscr.addstr(h//2, (w-len(msg))//2, msg)
+        self.stdscr.refresh()
+        time.sleep(2)
