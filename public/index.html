@@ -3,49 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yggdrasil Central Core - Pygame Edition</title>
+    <title>Yggdrasil Card Battle</title>
     <style>
         body, html {
             margin: 0;
             padding: 0;
             height: 100%;
             background-color: #000;
+            color: #0f0; /* サイバーグリーン */
+            font-family: 'Courier New', Courier, monospace;
             display: flex;
             justify-content: center;
             align-items: center;
             overflow: hidden;
-            font-family: 'Courier New', Courier, monospace;
         }
         #game-container {
-            position: relative;
-        }
-        #game-canvas {
-            display: none; /* Initially hidden */
-            background-color: #111;
-        }
-        #click-to-start {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: #00ff00;
-            font-size: 2em;
-            cursor: pointer;
-            text-align: center;
-            border: 2px solid #00ff00;
+            width: 90vw;
+            height: 90vh;
+            white-space: pre; /* これが重要！改行やスペースを維持する */
+            border: 1px solid #0f0;
             padding: 20px;
-            background-color: rgba(0, 20, 0, 0.8);
+            overflow-y: auto;
+            line-height: 1.2;
+            font-size: 16px;
         }
     </style>
 </head>
 <body>
-    <div id="game-container">
-        <canvas id="game-canvas"></canvas>
-        <div id="click-to-start">
-            【重要】ここをクリックして同期を開始<br>（画面フォーカス）
-        </div>
-    </div>
-
+    <div id="game-container">SYSTEM: 待機中... 画面をクリックして接続してください。</div>
     <script src="main.js"></script>
 </body>
 </html>
