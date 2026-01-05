@@ -1,84 +1,49 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const clickToStart = document.getElementById('click-to-start');
-    const canvas = document.getElementById('game-canvas');
-    const ctx = canvas.getContext('2d');
-    let socket;
+const terminal = document.getElementById('game-container');
+let ws;
 
-    // ゲーム画面の解像度（バックエンドと合わせる）
-    const GAME_WIDTH = 800;
-    const GAME_HEIGHT = 600;
-
-    canvas.width = GAME_WIDTH;
-    canvas.height = GAME_HEIGHT;
-
-    clickToStart.addEventListener('click', () => {
-        clickToStart.style.display = 'none';
-        canvas.style.display = 'block';
-        connectWebSocket();
-    }, { once: true }); // イベントリスナーを一度だけ実行
-
-    function connectWebSocket() {
-        socket = new WebSocket('wss://yggdrasil-websocket-backend.onrender.com/websocket');
-
-        socket.onopen = () => {
-            console.log('[SYSTEM] WebSocket connection established.');
-            // 接続成功したら、キー入力のリスニングを開始
-            setupKeyboardListeners();
-        };
-
-        socket.onmessage = (event) => {
-            // 受信したのが画像データの場合
-            if (event.data instanceof Blob) {
-                const image = new Image();
-                image.src = URL.createObjectURL(event.data);
-                image.onload = () => {
-                    ctx.drawImage(image, 0, 0);
-                    URL.revokeObjectURL(image.src); // メモリ解放
-                };
-            }
-            // 受信したのがテキストデータの場合（デバッグ用）
-            else {
-                console.log('[SERVER]', event.data);
-            }
-        };
-
-        socket.onclose = () => {
-            console.error('[SYSTEM] WebSocket connection closed.');
-            // エラーメッセージをCanvasに表示
-            ctx.fillStyle = 'red';
-            ctx.font = '20px "Courier New"';
-            ctx.textAlign = 'center';
-            ctx.fillText('サーバーとの接続が切れました。再読み込みしてください。', GAME_WIDTH / 2, GAME_HEIGHT / 2);
-        };
-
-        socket.onerror = (error) => {
-            console.error('[SYSTEM] WebSocket error:', error);
-            ctx.fillStyle = 'red';
-            ctx.font = '20px "Courier New"';
-            ctx.textAlign = 'center';
-            ctx.fillText('接続エラーが発生しました。', GAME_WIDTH / 2, GAME_HEIGHT / 2);
-        };
+// 画面クリックで通信開始（ブラウザのセキュリティ制限対策）
+window.addEventListener('click', () => {
+    if (!ws) {
+        initWebSocket();
+        terminal.innerHTML = "SYSTEM: 接続中...<br>";
     }
+}, { once: true });
 
-    function setupKeyboardListeners() {
-        window.addEventListener('keydown', (event) => {
-            sendKeyEvent('keydown', event.key);
-            event.preventDefault(); // ブラウザのデフォルト動作を抑制
-        });
+function initWebSocket() {
+    // 今のURLが https なら wss、http なら ws に自動切り替え
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.host;
+    const wsUrl = `${protocol}//${host}/ws`;
 
-        window.addEventListener('keyup', (event) => {
-            sendKeyEvent('keyup', event.key);
-            event.preventDefault();
-        });
-    }
+    ws = new WebSocket(wsUrl);
 
-    function sendKeyEvent(type, key) {
-        if (socket && socket.readyState === WebSocket.OPEN) {
-            socket.send(JSON.stringify({
-                type: 'key_event',
-                event: type,
-                key: key
-            }));
-        }
+    ws.onopen = () => {
+        terminal.innerHTML = "SYSTEM: 接続完了。データ同期中...<br>";
+        // サーバー側が PTY/Curses を開始するための信号を送る（必要に応じて）
+        ws.send("\n"); 
+    };
+
+    ws.onmessage = (event) => {
+        // サーバーから届いた文字を画面に表示
+        // Cursesの制御文字が含まれるため、本来はxterm.js等が必要ですが、
+        // まずは文字が出るか確認するために innerText を更新します。
+        const data = event.data;
+        terminal.innerText = data; 
+    };
+
+    ws.onclose = () => {
+        terminal.innerHTML += "<br>SYSTEM: 接続が切断されました。再読み込みしてください。";
+    };
+
+    ws.onerror = (err) => {
+        console.error("WebSocket Error:", err);
+    };
+}
+
+// キー入力をサーバーに送信
+window.addEventListener('keydown', (e) => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        // Cursesが認識できるように1文字ずつ送る
+        ws.send(e.key);
     }
 });
