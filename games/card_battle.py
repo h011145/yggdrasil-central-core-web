@@ -32,33 +32,33 @@ class CardBattle:
         
         # ログエリア
         for i, log in enumerate(self.logs[-5:]):
-            if 5 + i < h:
+            if 5 + i < h - 10:
                 self.stdscr.addstr(5 + i, 4, f"> {log}")
 
         # プレイヤーステータス
-        self.stdscr.addstr(h-8, 4, f"PLAYER [HP: {'#' * (self.player_hp // 10)}{'-' * (10 - self.player_hp // 10)}] {self.player_hp}%")
-        self.stdscr.addstr(h-7, 4, f"ENERGY: {'●' * self.player_energy}")
+        self.stdscr.addstr(h-9, 4, f"PLAYER [HP: {'#' * (self.player_hp // 10)}{'-' * (10 - self.player_hp // 10)}] {self.player_hp}%")
+        self.stdscr.addstr(h-8, 4, f"ENERGY: {'●' * self.player_energy}")
 
         # 手札描画
         for i, card in enumerate(self.hand):
             start_x = 4 + (i * 22)
             if start_x + 20 < w:
-                # 簡易的な枠線描画
-                self.stdscr.addstr(h-6, start_x, "+" + "-"*18 + "+")
-                self.stdscr.addstr(h-5, start_x, f"| {card[0][:16]:<16} |")
-                self.stdscr.addstr(h-4, start_x, f"| COST: {card[3]:<10} |")
-                self.stdscr.addstr(h-3, start_x, "+" + "-"*18 + "+")
-                self.stdscr.addstr(h-2, start_x + 8, f"[{i+1}]")
+                self.stdscr.addstr(h-7, start_x, "+" + "-"*18 + "+")
+                self.stdscr.addstr(h-6, start_x, f"| {card[0][:16]:<16} |")
+                self.stdscr.addstr(h-5, start_x, f"| COST: {card[3]:<10} |")
+                self.stdscr.addstr(h-4, start_x, "+" + "-"*18 + "+")
+                self.stdscr.addstr(h-3, start_x + 8, f"[{i+1}]")
 
         self.stdscr.addstr(h-1, 2, " [1-3]:Select Card  [Q]:Retreat ")
         self.stdscr.refresh()
 
     def play(self):
+        h, w = self.stdscr.getmaxyx()
         while self.player_hp > 0 and self.enemy_hp > 0:
             self.draw_ui()
             key = self.stdscr.getch()
             
-            if key == ord('q') or key == ord('Q'): break
+            if key in [ord('q'), ord('Q')]: break
             
             idx = -1
             if key == ord('1'): idx = 0
@@ -74,9 +74,11 @@ class CardBattle:
                     self.enemy_hp = max(0, self.enemy_hp - dmg)
                     self.logs.append(f"YOU: {card[0]} 実行。{dmg}Dmg。")
                     
-                    # 敵の反撃（簡易演出）
+                    if self.enemy_hp <= 0: break
+
+                    # 敵の反撃演出
                     self.draw_ui()
-                    time.sleep(0.3)
+                    time.sleep(0.4)
                     e_dmg = random.randint(10, 20)
                     self.player_hp = max(0, self.player_hp - e_dmg)
                     self.logs.append(f"ENEMY: 攻撃を検知。{e_dmg}Dmg受。")
@@ -90,6 +92,6 @@ class CardBattle:
         # 終了画面
         self.stdscr.clear()
         msg = "MISSION COMPLETE" if self.enemy_hp <= 0 else "CONNECTION LOST..."
-        self.stdscr.addstr(h//2, (w-len(msg))//2, msg)
+        self.stdscr.addstr(h//2, (w-len(msg))//2, msg, curses.A_BOLD)
         self.stdscr.refresh()
         time.sleep(2)
