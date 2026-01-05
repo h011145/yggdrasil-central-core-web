@@ -6,9 +6,9 @@ async def websocket_handler(request):
     ws = web.WebSocketResponse()
     await ws.prepare(request)
     
-    # 接続直後にメッセージを送る
+    # 接続成功時にブラウザへ送るメッセージ
     await ws.send_str("--- YGGDRASIL CORE ONLINE ---\r\n")
-    await ws.send_str("SYSTEM: サーバーとの接続を維持しています。\r\n")
+    await ws.send_str("SYSTEM: サーバーとの接続に成功しました。\r\n")
     await ws.send_str("COMMAND [1]攻撃 [2]防御 [Q]終了\r\n")
 
     try:
@@ -23,7 +23,7 @@ async def websocket_handler(request):
                     await ws.send_str(">> 接続を終了します...\r\n")
                     break
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"WS Error: {e}")
     finally:
         await ws.close()
     return ws
@@ -31,11 +31,16 @@ async def websocket_handler(request):
 async def init_app():
     app = web.Application()
     app.add_routes([web.get('/ws', websocket_handler)])
-    # publicフォルダを静的ファイルとして公開
+    # publicフォルダを配信する設定
     app.router.add_static('/', path='public', name='public', show_index=True)
     return app
 
 if __name__ == '__main__':
+    # 【最重要】Renderから指定されるポート番号を取得し、なければ8080を使う
     port = int(os.environ.get('PORT', 8080))
+    
     app = asyncio.run(init_app())
+    print(f"=== SERVER STARTING ON PORT {port} ===")
+    
+    # host='0.0.0.0' で外部接続を許可
     web.run_app(app, host='0.0.0.0', port=port)
